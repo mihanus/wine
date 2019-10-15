@@ -1,0 +1,31 @@
+SQLParserInfoType.PInfo "/net/medoc/home/mh/home/data/wine/Wine.db" "Wine"
+ [(("Wine","inCategory","Category"),SQLParserInfoType.NtoOne "WineCategory")
+ ,(("Category","withWine","Wine"),SQLParserInfoType.OnetoN "WineCategory")]
+ [("categoryKey",False)
+ ,("categoryName",False)
+ ,("wineKey",False)
+ ,("wineName",False)
+ ,("wineRegion",False)
+ ,("wineYear",False)
+ ,("winePrice",False)
+ ,("wineBottles",False)
+ ,("wineCategoryWineCategoryKey",False)]
+ [("category",("Category",["Key","Name"]))
+ ,("wine"
+  ,("Wine"
+   ,["Key"
+    ,"Name"
+    ,"Region"
+    ,"Year"
+    ,"Price"
+    ,"Bottles"
+    ,"CategoryWineCategoryKey"]))]
+ [("categoryKey","Category")
+ ,("categoryName","string")
+ ,("wineKey","Wine")
+ ,("wineName","string")
+ ,("wineRegion","string")
+ ,("wineYear","int")
+ ,("winePrice","string")
+ ,("wineBottles","int")
+ ,("wineCategoryWineCategoryKey","Category")]

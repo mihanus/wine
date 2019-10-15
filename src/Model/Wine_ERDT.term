@@ -1,0 +1,17 @@
+{- ERD specification transformed from /home/mh/home/curry/applications/wine2/Wine.erdterm -}
+
+ ERD "Wine"
+   [Entity "Category"
+           [Attribute "Key" (IntDom Nothing) PKey False,
+            Attribute "Name" (StringDom Nothing) NoKey False],
+    Entity "Wine"
+           [Attribute "Key" (IntDom Nothing) PKey False,
+            Attribute "Name" (StringDom Nothing) NoKey False,
+            Attribute "Region" (StringDom Nothing) NoKey False,
+            Attribute "Year" (IntDom Nothing) NoKey False,
+            Attribute "Price" (StringDom Nothing) NoKey False,
+            Attribute "Bottles" (IntDom Nothing) NoKey False,
+            Attribute "CategoryWineCategoryKey" (KeyDom "Category") NoKey False]]
+   [Relationship "WineCategory"
+                 [REnd "Category" "inCategory" (Exactly 1),
+                  REnd "Wine" "withWine" (Between 0 Infinite)]]
