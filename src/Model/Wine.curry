@@ -109,6 +109,13 @@ showCategoryKey entry =
   Database.CDBI.ER.showDatabaseKey "Category" categoryKeyToInt
    (categoryKey entry)
 
+--- Shows the key of a `Category` entity as a string.
+--- This is useful if a textual representation of the key is necessary
+--- (e.g., as URL parameters in web pages), but it should no be used
+--- to store keys in other attributes!
+showCategoryIDKey :: CategoryID -> String
+showCategoryIDKey = Database.CDBI.ER.showDatabaseKey "Category" categoryKeyToInt
+
 --- Transforms a string into a key of a `Category` entity.
 --- Nothing is returned if the string does not represent a meaningful key.
 readCategoryKey :: String -> Maybe CategoryID

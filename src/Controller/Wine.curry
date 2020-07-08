@@ -8,6 +8,7 @@ import Time
 
 import HTML.Base
 import HTML.Session
+import HTML.Styles.Bootstrap3
 import HTML.WUI
 
 import Config.Storage
@@ -21,7 +22,7 @@ import System.Authorization
 import System.AuthorizedActions
 import Config.Globals
 import Config.UserProcesses
-import View.WineEntitiesToHtml
+import View.EntitiesToHtml
 import Database.CDBI.Connection
 
 --- Choose the controller for a Wine entity according to the URL parameter.
@@ -29,23 +30,18 @@ mainWineController :: Controller
 mainWineController =
   do args <- getControllerParams
      case args of
-       [] -> listWineController Nothing
-       ["list"] -> listWineController Nothing
+       [] -> listWineController Nothing False
+       ["list"] -> listWineController Nothing False
+       ["list","all"] -> listWineController Nothing True
        ["new"] -> newWineController
-       ["cat",s] -> listWineController (readCategoryKey s)
-       ["show",s] -> applyWineControllerOn s showWineController
-       ["decr",s] -> applyWineControllerOn s decrWineController
-       ["edit",s] -> applyWineControllerOn s editWineController
-       ["delete",s] -> applyWineControllerOn s deleteWineController
-       ["destroy",s] -> applyWineControllerOn s destroyWineController
+       ["cat",s] -> listWineController (readCategoryKey s) False
+       ["cat",s,"all"] -> listWineController (readCategoryKey s) True
+       ["show"   ,s] -> controllerOnKey s showWineController
+       ["decr"   ,s] -> controllerOnKey s decrWineController
+       ["edit"   ,s] -> controllerOnKey s editWineController
+       ["delete" ,s] -> controllerOnKey s deleteWineController
+       ["destroy",s] -> controllerOnKey s destroyWineController
        _ -> displayUrlError
-
---- Applies a wine controller on the wine specified by the
---- key (first argument).
-applyWineControllerOn
-  :: String -> (Wine -> Controller) -> Controller
-applyWineControllerOn s =
-  applyControllerOn (readWineKey s) (runJustT . getWine)
 
 getAllCats :: IO [Category]
 getAllCats = runQ queryAllCategorys >>= return . sortBy leqCategory
@@ -71,8 +67,8 @@ newWineForm =
     wuiNewWineStore
     (\allCategorys -> wWine allCategorys)
     (\_ entity -> transactionController (runT (createWineT entity))
-                    (nextInProcessOr (listWineController Nothing) Nothing))
-    (renderWuiExp "Neuer Wein" "Anlegen" (listWineController Nothing))
+                   (nextInProcessOr (listWineController Nothing False) Nothing))
+    (renderWUI "Neuer Wein" "Anlegen" "?Wine/list")
 
 ---- The data stored for executing the WUI form.
 wuiNewWineStore :: Global (SessionStore ([Category], WuiStore NewWine))
@@ -109,10 +105,12 @@ editWineForm =
        checkAuthorization (wineOperationAllowed (UpdateEntity wine)) $ \_ ->
          transactionController (runT (updateWineT wine))
            (nextInProcessOr
-              (listWineController (Just (wineCategoryWineCategoryKey wine)))
+              (listWineController (Just (wineCategoryWineCategoryKey wine))
+                                  False)
               Nothing))
-    (\ (wine,_,_) -> renderWuiExp "Ändere Wein" "Ändern"
-         (listWineController (Just (wineCategoryWineCategoryKey wine))) ())
+    (\ (wine,_,_) -> renderWUI "Ändere Wein" "Ändern"
+         ("?Wine/cat/" ++ showCategoryIDKey (wineCategoryWineCategoryKey wine))
+         ())
 
 ---- The data stored for executing the WUI form.
 wuiEditWineStore ::
@@ -128,7 +126,7 @@ decrWineController wine =
                           (setWineBottles wine (wineBottles wine - 1)))
     either (\ error -> displayError (show error))
            (\ _ -> listWineController
-                       (Just (wineCategoryWineCategoryKey wine)))
+                       (Just (wineCategoryWineCategoryKey wine)) False)
            transResult
 
 --- Transaction to persist modifications of a given Wine entity
@@ -141,9 +139,10 @@ updateWineT wine = updateWine wine
 --- and proceeds with the list controller.
 deleteWineController :: Wine -> Controller
 deleteWineController wine =
-  checkAuthorization (wineOperationAllowed (DeleteEntity wine)) $ \_ ->
-     confirmDeletionPage $ concat
-       ["Really delete entity \"", wineToShortView wine, "\"?"]
+  checkAuthorization (wineOperationAllowed (DeleteEntity wine))
+   $ (\sinfo ->
+     confirmDeletionPage sinfo
+      (concat ["Really delete entity \"",wineToShortView wine,"\"?"]))
 
 --- Deletes a given Wine entity
 --- and proceeds with the list controller.
@@ -151,7 +150,7 @@ destroyWineController :: Wine -> Controller
 destroyWineController wine =
   checkAuthorization (wineOperationAllowed (DeleteEntity wine)) $ \_ ->
     transactionController (runT (deleteWineT wine))
-      (listWineController (Just (wineCategoryWineCategoryKey wine)))
+      (listWineController (Just (wineCategoryWineCategoryKey wine)) False)
 
 --- Transaction to delete a given Wine entity.
 deleteWineT :: Wine -> DBAction ()
@@ -160,20 +159,32 @@ deleteWineT wine = deleteWine wine
 --------------------------------------------------------------------------
 --- Lists all Wine entities with buttons to show, delete,
 --- or edit an entity.
-listWineController :: Maybe CategoryID -> Controller
-listWineController mbcat =
-  checkAuthorization (wineOperationAllowed ListEntities)
-   $ (\sinfo ->
-     do wines <- runQ queryAllWines
-        let selwines =
-              maybe wines
+listWineController :: Maybe CategoryID -> Bool -> Controller
+listWineController mbcat showall =
+  checkAuthorization (wineOperationAllowed ListEntities) $ \sinfo -> do
+    allwines <- runQ queryAllWines
+    let wines = filter (\w -> showall || wineBottles w > 0) allwines
+    let selwines =
+          maybe wines
                 (\c -> filter (\w -> wineCategoryWineCategoryKey w == c) wines)
                 mbcat
-        catname <- maybe (return "Alle Weine") getCategoryName mbcat
-        allcats <- maybe (getAllCats >>= return . Just)
-                         (\_ -> return Nothing)
-                         mbcat
-        return (listWineView sinfo catname allcats selwines))
+    catname <- maybe (return "Alle Weine") getCategoryName mbcat
+    let allbutton =
+          if showall
+            then hrefSuccessButton
+                   ("?Wine/" ++
+                    maybe "list" (\c -> "cat/" ++ showCategoryIDKey c) mbcat)
+                   [htxt "nur Weine mit Flaschen anzeigen"]
+            else hrefSuccessButton
+                   ("?Wine/" ++
+                    maybe "list/all"
+                          (\c -> "cat/" ++ showCategoryIDKey c ++ "/all")
+                          mbcat)
+                   [htxt "auch Weine ohne Flaschen anzeigen"]
+    allcats <- maybe (getAllCats >>= return . Just)
+                     (\_ -> return Nothing)
+                     mbcat
+    return (listWineView sinfo catname allcats selwines allbutton)
 
 
 --- Shows a Wine entity.

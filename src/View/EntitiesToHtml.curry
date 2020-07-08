@@ -1,8 +1,9 @@
-module View.WineEntitiesToHtml where
+module View.EntitiesToHtml where
 
-import HTML.WUI
-import HTML.Base
 import Time
+import HTML.Base
+import HTML.Styles.Bootstrap4 ( hrefInfoBlock )
+import HTML.WUI
 import System.Spicey
 import Wine
 
@@ -10,7 +11,7 @@ import Wine
 --- This view is used in a row of a table of all entities.
 categoryToListView :: Category -> [[HtmlExp]]
 categoryToListView category =
-  [[spHrefInfoBlock (showControllerURL "Wine" ["cat",showCategoryKey category])
+  [[hrefInfoBlock (showControllerURL "Wine" ["cat",showCategoryKey category])
                     [stringToHtml (categoryName category)]]]
 
 --- The short view of a Category entity as a string.

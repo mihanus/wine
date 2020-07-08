@@ -6,12 +6,13 @@ import HTML.WUI
 import HTML.Base
 import Time
 import Sort
-import HTML.Styles.Bootstrap3
+import HTML.Styles.Bootstrap4
 import System.Authentication
-import System.Spicey
-import System.SessionInfo
 import Wine
-import View.WineEntitiesToHtml
+import Config.EntityRoutes
+import System.SessionInfo
+import System.Spicey
+import View.EntitiesToHtml
 
 --- The WUI specification for the entity type Wine.
 --- It also includes fields for associated entities.
@@ -60,7 +61,7 @@ wWineType wine category categoryList =
 showWineView :: UserSessionInfo -> Wine -> Category -> [HtmlExp]
 showWineView _ wine relatedCategory =
   wineToDetailsView wine relatedCategory
-   ++ [hrefButton "?Wine/list" [htxt "back to Wine list"]]
+   ++ [hrefPrimSmButton "?Wine/list" [htxt "back to Wine list"]]
 
 --- Compares two Wine entities. This order is used in the list view.
 leqWine :: Wine -> Wine -> Bool
@@ -72,12 +73,13 @@ leqWine x1 x2 =
 --- Shows also show/edit/delete buttons if the user is logged in.
 --- The arguments are the session info and the list of Wine entities.
 listWineView :: UserSessionInfo -> String -> Maybe [Category] -> [Wine]
-             -> [HtmlExp]
-listWineView sinfo catname mballcats wines =
+             -> HtmlExp -> [HtmlExp]
+listWineView sinfo catname mballcats wines allbutton =
   [h1 [htxt catname]
-  ,spTable ([take 5 wineLabelList] ++ listWines mballcats)]
+  ,spTable ([take 5 wineLabelList] ++ listWines mballcats)
+  ,allbutton]
   where
-   listWines Nothing = map listWine (mergeSortBy leqWine wines)
+   listWines Nothing     = map listWine (mergeSortBy leqWine wines)
    listWines (Just cats) = concatMap listWinesOfCat cats
 
    listWinesOfCat cat =
@@ -94,7 +96,8 @@ listWineView sinfo catname mballcats wines =
    listWine :: Wine -> [[HtmlExp]]
    listWine wine =
      wineToListView wine ++
-      if not (isAdminSession sinfo) then [] else
-      [[spHref ("?Wine/decr/" ++ showWineKey wine) [htxt "-1"]]
-      ,[spHref ("?Wine/edit/" ++ showWineKey wine) [editIcon]]
-      ,[spHref ("?Wine/delete/" ++ showWineKey wine) [deleteIcon]]]
+      if not (isAdminSession sinfo)
+        then []
+        else [[hrefPrimBadge (entityRoute "decr" wine) [htxt "-1"]]
+             ,[hrefLightBadge (editRoute   wine) [editIcon]]
+             ,[hrefLightBadge (deleteRoute wine) [deleteIcon]]]

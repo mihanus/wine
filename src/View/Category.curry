@@ -7,12 +7,13 @@ import HTML.WUI
 import HTML.Base
 import Time
 import Sort
-import HTML.Styles.Bootstrap3
+import HTML.Styles.Bootstrap4
+import Config.EntityRoutes
 import System.Authentication
 import System.Spicey
 import System.SessionInfo
 import Wine
-import View.WineEntitiesToHtml
+import View.EntitiesToHtml
 
 --- The WUI specification for the entity type Category.
 wCategory :: WuiSpec String
@@ -38,7 +39,7 @@ wCategoryType category =
 showCategoryView :: UserSessionInfo -> Category -> [HtmlExp]
 showCategoryView _ category =
   categoryToDetailsView category
-   ++ [hrefButton "?Category/list" [htxt "back to Category list"]]
+   ++ [hrefPrimSmButton "?Category/list" [htxt "back to Category list"]]
 
 --- Compares two Category entities. This order is used in the list view.
 leqCategory :: Category -> Category -> Bool
@@ -56,10 +57,6 @@ listCategoryView sinfo categorys =
         listCategory category =
           categoryToListView category ++
            if not (isAdminSession sinfo) then [] else
-           [--[spHref ("?Category/show/" ++ showCategoryKey category)
-            --  [htxt "show"]]
-            [spHref ("?Category/edit/" ++ showCategoryKey category)
-              [editIcon]]
-           
-           ,[spHref ("?Category/delete/" ++ showCategoryKey category)
-              [deleteIcon]]]
+           [--[hrefPrimBadge (showRoute category) [htxt "Show"]]
+            [hrefLightBadge (editRoute category)   [editIcon]]
+           ,[hrefLightBadge (deleteRoute category) [deleteIcon]]]

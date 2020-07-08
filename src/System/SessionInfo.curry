@@ -14,7 +14,6 @@ module System.SessionInfo (
   getUserSessionInfo, updateUserSessionInfo
  ) where
 
-import FilePath ( (</>) )
 import Global
 
 import HTML.Session
@@ -53,8 +52,6 @@ getUserSessionInfo =
 
 --- Updates the data of the current user session.
 updateUserSessionInfo :: (UserSessionInfo -> UserSessionInfo) -> IO ()
-updateUserSessionInfo upd = do
-  sd <- getUserSessionInfo
-  putSessionData userSessionInfo (upd sd)
+updateUserSessionInfo = updateSessionData userSessionInfo emptySessionInfo
 
 --------------------------------------------------------------------------

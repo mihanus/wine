@@ -10,7 +10,7 @@ module View.SpiceySystem
  where
 
 import HTML.Base
-import HTML.Styles.Bootstrap3 (defaultButton, primButton)
+import HTML.Styles.Bootstrap4 ( hrefScndSmButton, primSmButton, scndButton )
 
 import Config.Globals
 import Config.UserProcesses
@@ -19,17 +19,18 @@ import System.Spicey
 import System.Authentication
 
 -----------------------------------------------------------------------------
---- View for login/logout. If the passed login name is the empty string,
+--- Generates a form for login/logout.
+--- If the passed login name is the empty string,
 --- we offer a login dialog, otherwise a logout dialog.
-loginView :: Controller -> Maybe String -> [HtmlExp]
-loginView controller currlogin =
+loginView :: Maybe String -> [HtmlExp]
+loginView currlogin =
   case currlogin of
    Nothing -> [h3 [htxt "Manager password:"],
-               password passwdfield,
-               defaultButton "Login" loginHandler]
+               password passwdfield, nbsp,
+               primSmButton "Login" loginHandler]
    Just _  -> [h3 [htxt "Really logout?"],
-               primButton "Logout" (logoutHandler True),
-               defaultButton "Cancel" (logoutHandler False)]
+               primSmButton "Logout" logoutHandler, nbsp,
+               hrefScndSmButton "?" [htxt "Cancel"]]
  where
   passwdfield free
 
@@ -44,12 +45,11 @@ loginView controller currlogin =
                 then do loginToSession loginname
                         setPageMessage ("Logged in as: "++loginname)
                 else setPageMessage "Login failed: wrong password"
-    nextInProcessOr controller Nothing >>= getPage
-  
-  logoutHandler confirm _ = do
-    if confirm then logoutFromSession >> setPageMessage "Logged out"
-               else done
-    nextInProcessOr controller Nothing >>= getPage
+    nextInProcessOr (redirectController "?") Nothing >>= getPage
+
+  logoutHandler _ = do
+    logoutFromSession >> setPageMessage "Logged out"
+    nextInProcessOr (redirectController "?") Nothing >>= getPage
 
 -----------------------------------------------------------------------------
 --- A view for all processes contained in a given process specification.

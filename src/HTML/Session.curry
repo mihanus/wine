@@ -86,9 +86,9 @@ sessionCookie :: IO PageParam
 sessionCookie = do
   sessionId <- getSessionId
   clockTime <- getClockTime
-  return (PageCookie sessionCookieName (getId (sessionId))
-                     [CookiePath "/",
-                      CookieExpire (addMinutes sessionLifespan clockTime)])
+  return $ PageCookie sessionCookieName (getId (sessionId))
+                      [CookiePath "/",
+                       CookieExpire (addMinutes sessionLifespan clockTime)]
 
 --- Decorates an HTML page with session cookie.
 withSessionCookie :: HtmlPage -> IO HtmlPage
@@ -101,19 +101,17 @@ withSessionCookie p = do
 withSessionCookieInfo :: HtmlPage -> IO HtmlPage
 withSessionCookieInfo p = do
   hassession <- doesSessionExist
-  if hassession
-    then do cookie <- sessionCookie
-            return $ (p `addPageParam` cookie)
-    else cookieInfoPage
+  if hassession then withSessionCookie p
+                else cookieInfoPage
 
 -- Returns HTML page with information about the use of cookies.
 cookieInfoPage :: IO HtmlPage
 cookieInfoPage = do
   urlparam <- getUrlParameter
   withSessionCookie $ standardPage "Cookie Info"
-    [ par [ htxt "This web site uses cookies for navigation and user inputs." ]
-    , par [ htxt "In order to proceed, please click "
-          , bold [href ('?' : urlparam) [htxt "here"]], htxt "." ] ]
+    [ par [ htxt $ "This web site uses cookies for navigation and user " ++
+                   "inputs and preferences. In order to proceed, "
+          , bold [href ('?' : urlparam) [htxt "please click here."]]]]
 
 ----------------------------------------------------------------------------
 -- Implementation of session stores.

@@ -22,26 +22,23 @@ import HTML.Session
 import System.Processes
 import System.Authentication
 import View.SpiceySystem
-import Controller.DefaultController
 
 -----------------------------------------------------------------------------
 --- Controller for login/logout.
 loginController :: Controller
 loginController = do
   login <- getSessionLogin
-  putSessionData loginFormStore login
+  putSessionData loginViewData login
   return [formExp loginFormDef]
 
 loginFormDef :: HtmlFormDef (Maybe String)
-loginFormDef =
-  formDefWithID "Controller.SpiceySystem.loginFormDef"
-    (getSessionData loginFormStore Nothing)
-    (loginView defaultController)
+loginFormDef = formDefWithID "Controller.SpiceySystem.loginFormDef"
+  (getSessionData loginViewData Nothing) loginView
 
 --- The data processed by the login form.
-loginFormStore :: Global (SessionStore (Maybe String))
-loginFormStore =
-  global emptySessionStore (Persistent (inDataDir "loginFormStore"))
+loginViewData :: Global (SessionStore (Maybe String))
+loginViewData =
+  global emptySessionStore (Persistent (inDataDir "loginViewData"))
 
 -----------------------------------------------------------------------------
 --- Controller for showing and selecting user processes.

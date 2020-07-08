@@ -4,43 +4,46 @@
 --------------------------------------------------------------------------
 
 module System.Spicey (
-  Controller, applyControllerOn,
+  Controller, EntityController(..), showRoute, editRoute, deleteRoute,
+  applyControllerOn,
+  redirectController,
   nextController, nextControllerForData,
   confirmDeletionPage,
   transactionController,
   getControllerURL,getControllerParams, showControllerURL,
   getPage, wDateType, wBoolean, wUncheckMaybe, wFloat,
   displayError, displayUrlError, cancelOperation,
-  renderWuiExp, renderLabels,
+  renderWUI, renderLabels,
   nextInProcessOr,
   stringToHtml, maybeStringToHtml,
   intToHtml,maybeIntToHtml, floatToHtml, maybeFloatToHtml,
   boolToHtml, maybeBoolToHtml, dateToHtml, maybeDateToHtml,
   userDefinedToHtml, maybeUserDefinedToHtml,
   editIcon, deleteIcon,
-  spHref, spHrefInfoBlock, spTable,
+  spTable,
   setPageMessage, getPageMessage,
   saveLastUrl, getLastUrl, getLastUrls
   ) where
 
-import Char (isSpace,isDigit)
+import Char         ( isSpace, isDigit )
+import FilePath     ( (</>) )
 import Global
-import ReadShowTerm(readsQTerm)
+import ReadShowTerm ( readsQTerm )
 import Time
 
 import Database.CDBI.Connection ( SQLResult )
 import HTML.Base
 import HTML.Session
-import HTML.Styles.Bootstrap3
+import HTML.Styles.Bootstrap4
 import HTML.WUI
 
+import Config.Storage
 import Config.UserProcesses
 import System.Routes
 import System.Processes
 import System.Authentication
 
----------------- vvvv -- Framework functions -- vvvv -----------------------
-
+--------------------------------------------------------------------------
 -- a viewable can be turned into a representation which can be displayed
 -- as interface
 -- here: a representation of a HTML page
@@ -55,12 +58,41 @@ type ViewBlock = [HtmlExp]
 --- Spicey.getControllerParams inside the controller.
 type Controller = IO ViewBlock
 
+
+--- The type class `EntityController` contains:
+--- * the application of a controller to some entity identified by a key string
+--- * an operation to construct a URL route for an entity w.r.t. to a route
+---   string
+class EntityController a where
+  controllerOnKey :: String -> (a -> Controller) -> Controller
+
+  entityRoute :: String -> a -> String
+
+
+--- Returns the URL route to show a given entity.
+showRoute :: EntityController a => a -> String
+showRoute = entityRoute "show"
+
+--- Returns the URL route to edit a given entity.
+editRoute :: EntityController a => a -> String
+editRoute = entityRoute "edit"
+
+--- Returns the URL route to delete a given entity.
+deleteRoute :: EntityController a => a -> String
+deleteRoute = entityRoute "delete"
+
+
 --- Reads an entity for a given key and applies a controller to it.
 applyControllerOn :: Maybe enkey -> (enkey -> IO en)
                   -> (en -> Controller) -> Controller
 applyControllerOn Nothing _ _ = displayUrlError
 applyControllerOn (Just userkey) getuser usercontroller =
   getuser userkey >>= usercontroller
+
+--- A controller to redirect to an URL starting with "?"
+--- (see implementation of `getPage`).
+redirectController :: String -> Controller
+redirectController url = return [HtmlText url]
 
 nextController :: Controller -> _ -> IO HtmlPage
 nextController controller _ = do
@@ -73,6 +105,7 @@ nextControllerForData controller param = do
   view <- controller param
   getPage view
 
+
 --- Generates a page to ask the user for a confirmation to delete an entity
 --- specified in the controller URL (of the form "entity/delete/key/...").
 --- The yes/no answers are references derived from the controller URL
@@ -80,15 +113,16 @@ nextControllerForData controller param = do
 --- @param question - a question asked
 --- @param yescontroller - the controller used if the answer is "yes"
 --- @param nocontroller  - the controller used if the answer is "no"
-confirmDeletionPage :: String -> Controller
-confirmDeletionPage question = do
+confirmDeletionPage :: UserSessionInfo -> String -> Controller
+confirmDeletionPage _ question = do
   (entity,ctrlargs) <- getControllerURL
   case ctrlargs of
     (_:args) -> return $
       [h3 [htxt question],
-       par [hrefButton (showControllerURL entity ("destroy":args)) [htxt "Yes"],
+       par [hrefPrimSmButton (showControllerURL entity ("destroy":args))
+                             [htxt "Yes"],
             nbsp,
-            hrefButton (showControllerURL entity ("show" : args)) [htxt "No"]]]
+            hrefScndSmButton (showControllerURL entity ["list"]) [htxt "No"]]]
     _ -> displayUrlError
 
 
@@ -153,18 +187,18 @@ showControllerURL ctrlurl params = '?' : ctrlurl ++ concatMap ('/':) params
 --- Standard rendering for WUI forms to edit data.
 --- @param title      - the title of the WUI form
 --- @param buttontag  - the text on the submit button
---- @param cancelctrl - the controller called if submission is cancelled
+--- @param cancelurl  - the URL selected if submission is cancelled
 --- @param envpar     - environment parameters (e.g., user session data)
 --- @param hexp       - the HTML expression representing the WUI form
 --- @param handler    - the handler for submitting data
-renderWuiExp :: String -> String -> Controller
-             -> a -> HtmlExp -> (CgiEnv -> Controller) -> [HtmlExp]
-renderWuiExp title buttontag cancelctrl _ hexp handler =
+renderWUI :: String -> String -> String
+          -> a -> HtmlExp -> (CgiEnv -> Controller) -> [HtmlExp]
+renderWUI title buttontag cancelurl _ hexp handler =
   [h1 [htxt title],
    hexp,
    breakline,
-   primButton buttontag (\env -> handler env >>= getPage),
-   defaultButton "Abbrechen" (nextController (cancelOperation >> cancelctrl))]
+   primSmButton buttontag (\env -> handler env >>= getPage), nbsp,
+   hrefScndSmButton cancelurl [htxt "Cancel"]]
 
 
 --- A WUI for manipulating CalendarTime entities.
@@ -226,7 +260,7 @@ spiceyTitle = "Weinverwaltung"
 
 --- The home URL and brand shown at the left top of the main page.
 spiceyHomeBrand :: (String, [HtmlExp])
-spiceyHomeBrand = ("?", [homeIcon, htxt " Alle Kategorien"])
+spiceyHomeBrand = ("?", [htxt " Alle Kategorien"])
 
 --- The standard footer of the Spicey page.
 spiceyFooter :: [HtmlExp]
@@ -236,25 +270,23 @@ spiceyFooter =
              [image "images/spicey-logo.png" "Spicey"]
           `addAttr` ("target","_blank"),
         htxt "Framework"]]
-        
+
 --- Transforms a view into an HTML form by adding the basic page layout.
+--- If the view is an empty text or a text starting with "?",
+--- generates a redirection page.
 getPage :: ViewBlock -> IO HtmlPage
 getPage viewblock = case viewblock of
-  [HtmlText ""] ->
-       return $ HtmlPage "forward to Spicey"
-                  [pageMetaInfo [("http-equiv","refresh"),
-                                 ("content","1; url=spicey.cgi")]]
-                  [par [htxt "You will be forwarded..."]]
+  [HtmlText ""]          -> return $ redirectPage "spicey.cgi"
+  [HtmlText ('?':route)] -> return $ redirectPage ('?':route)
   _ -> do
-    routemenu <- getRouteMenu
-    msg       <- getPageMessage
-    login     <- getSessionLogin
-    lasturl   <- getLastUrl
-    withSessionCookie $
-      bootstrapPage "." ["bootstrap.min","spicey"] spiceyTitle
-               spiceyHomeBrand routemenu (rightTopMenu login)
-               0 []  [h1 [htxt spiceyTitle]]
-               (messageLine msg lasturl : viewblock ) spiceyFooter
+    routemenu  <- getRouteMenu
+    msg        <- getPageMessage
+    login      <- getSessionLogin
+    lasturl    <- getLastUrl
+    withSessionCookie $ bootstrapPage favIcon cssIncludes jsIncludes
+      spiceyTitle spiceyHomeBrand routemenu (rightTopMenu login)
+      0 []  [h1 [htxt spiceyTitle]]
+      (messageLine msg lasturl : viewblock ) spiceyFooter
  where
   messageLine msg lasturl =
     if null msg
@@ -263,13 +295,24 @@ getPage viewblock = case viewblock of
       else HtmlStruct "header" [("class","pagemessage")] [htxt msg]
         
   rightTopMenu login =
-    [[href "?login" (maybe [loginIcon, nbsp, htxt "Login"]
-                           (\n -> [logoutIcon, nbsp, htxt "Logout"
-                                  ,htxt $ " ("
-                                  ,style "text-success" [userIcon]
-                                  ,htxt $ " "++n++")"
-                                  ])
+    [[hrefNav "?login" (maybe [htxt "Login"]
+                              (\n -> [ htxt "Logout"
+                                     , htxt $ " (" ++ n ++ ")"
+                                     ])
                            login)]]
+
+favIcon :: String
+favIcon = "bt4" </> "img" </> "favicon.ico"
+
+cssIncludes :: [String]
+cssIncludes =
+  map (\n -> "bt4" </> "css" </> n ++ ".css")
+      ["bootstrap.min", "spicey"]
+
+jsIncludes :: [String]
+jsIncludes = 
+  map (\n -> "bt4" </> "js" </> n ++ ".js")
+      ["jquery.slim.min", "bootstrap.bundle.min"]
 
 -------------------------------------------------------------------------
 -- Action performed when a "cancel" button is pressed.
@@ -344,51 +387,24 @@ maybeUserDefinedToHtml ud = textstyle "type_string" (maybe "" show ud)
 --------------------------------------------------------------------------
 -- Auxiliary HTML items:
 
---- Hypertext reference in Spicey (rendered as a block button):
-spHref :: String -> [HtmlExp] -> HtmlExp
-spHref ref hexps =
-  href ref hexps `addClass` "btn btn-sm btn-default"
-
---- Hypertext reference in Spicey (rendered as a block button):
-spHrefBlock :: String -> [HtmlExp] -> HtmlExp
-spHrefBlock ref hexps =
-  href ref hexps `addClass` "btn btn-small btn-block"
-
---- Hypertext reference in Spicey (rendered as an info block button):
-spHrefInfoBlock :: String -> [HtmlExp] -> HtmlExp
-spHrefInfoBlock ref hexps =
-  href ref hexps `addClass` "btn btn-info btn-block"
-
---- Standard table in Spicey. Visualize it with a grid or with
---- a table if there are too many columns.
+--- Standard table in Spicey.
 spTable :: [[[HtmlExp]]] -> HtmlExp
 spTable items = table items  `addClass` "table table-hover table-condensed"
 
 --------------------------------------------------------------------------
 -- Icons:
 
-homeIcon :: HtmlExp
-homeIcon   = glyphicon "home"
-
-loginIcon :: HtmlExp
-loginIcon  = glyphicon "log-in"
-
-logoutIcon :: HtmlExp
-logoutIcon = glyphicon "log-out"
-
-arrowIcon :: HtmlExp
-arrowIcon  = glyphicon "arrow-right"
-
 --- Edit icon:
 editIcon :: HtmlExp
-editIcon   = glyphicon "edit"
+editIcon =
+  image "bt4/img/pencil-square.svg" "edit"
+    `addAttrs` [("width","24"), ("height","24")]
 
 --- Delete icon:
 deleteIcon :: HtmlExp
-deleteIcon = glyphicon "remove"
-
-glyphicon :: String -> HtmlExp
-glyphicon n = textstyle ("glyphicon glyphicon-" ++ n) ""
+deleteIcon =
+  image "bt4/img/trash.svg" "remove"
+    `addAttrs` [("width","24"), ("height","24")]
 
 --------------------------------------------------------------------------
 -- The page messages are implemented by a session store.
@@ -397,7 +413,7 @@ glyphicon n = textstyle ("glyphicon glyphicon-" ++ n) ""
 
 --- Definition of the session state to store the page message (a string).
 pageMessage :: Global (SessionStore String)
-pageMessage = global emptySessionStore Temporary
+pageMessage = global emptySessionStore (Persistent (inDataDir "pageMessage"))
 
 --- Gets the page message and delete it.
 getPageMessage :: IO String
@@ -416,7 +432,7 @@ setPageMessage msg = putSessionData pageMessage msg
 
 --- Definition of the session state to store the last URL (as a string).
 lastUrls :: Global (SessionStore [String])
-lastUrls = global emptySessionStore Temporary
+lastUrls = global emptySessionStore (Persistent (inDataDir "lastUrls"))
 
 --- Gets the list of URLs of the current session.
 getLastUrls :: IO [String]
