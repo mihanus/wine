@@ -11,7 +11,6 @@ import HTML.Base
 import HTML.Session
 import HTML.WUI
 
-import Config.Storage
 import System.Spicey
 import Wine
 import View.Category
@@ -62,7 +61,7 @@ newCategoryForm =
 ---- The data stored for executing the WUI form.
 wuiNewCategoryStore :: Global (SessionStore (WuiStore NewCategory))
 wuiNewCategoryStore =
-  global emptySessionStore (Persistent (inDataDir "wuiNewCategoryStore"))
+  global emptySessionStore (Persistent (inSessionDataDir "wuiNewCategoryStore"))
 
 --- Transaction to persist a new Category entity to the database.
 createCategoryT :: String -> DBAction ()
@@ -93,7 +92,7 @@ editCategoryForm =
 ---- The data stored for executing the WUI form.
 wuiEditCategoryStore :: Global (SessionStore (Category, WuiStore Category))
 wuiEditCategoryStore =
-  global emptySessionStore (Persistent (inDataDir "wuiEditCategoryStore"))
+  global emptySessionStore (Persistent (inSessionDataDir "wuiEditCategoryStore"))
 
 --- Transaction to persist modifications of a given Category entity
 --- to the database.

@@ -11,7 +11,6 @@ import HTML.Session
 import HTML.Styles.Bootstrap3
 import HTML.WUI
 
-import Config.Storage
 import System.Spicey
 import Wine
 import View.Category
@@ -73,7 +72,7 @@ newWineForm =
 ---- The data stored for executing the WUI form.
 wuiNewWineStore :: Global (SessionStore ([Category], WuiStore NewWine))
 wuiNewWineStore =
-  global emptySessionStore (Persistent (inDataDir "wuiNewWineStore"))
+  global emptySessionStore (Persistent (inSessionDataDir "wuiNewWineStore"))
 
 --- Transaction to persist a new Wine entity to the database.
 createWineT :: (String,String,Int,String,Int,Category) -> DBAction ()
@@ -116,7 +115,7 @@ editWineForm =
 wuiEditWineStore ::
   Global (SessionStore ((Wine,Category,[Category]), WuiStore Wine))
 wuiEditWineStore =
-  global emptySessionStore (Persistent (inDataDir "wuiEditWineStore"))
+  global emptySessionStore (Persistent (inSessionDataDir "wuiEditWineStore"))
 
 --- Decrement the number of bottles of the given Wine entity.
 decrWineController :: Wine -> Controller

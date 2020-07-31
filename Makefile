@@ -77,9 +77,12 @@ deploy: checkdeploy
 	mkdir -p $(WEBSERVERDIR)/data # create private data dir
 	cp -p data/htaccess $(WEBSERVERDIR)/data/.htaccess # and make it private
 	chmod 700 $(WEBSERVERDIR)/data
+	mkdir -p $(WEBSERVERDIR)/sessiondata # create private data dir
+	cp -p data/htaccess $(WEBSERVERDIR)/sessiondata/.htaccess # and make it private
+	chmod 700 $(WEBSERVERDIR)/sessiondata
 
 $(WEBSERVERDIR)/spicey.cgi: src/*.curry src/*/*.curry
-	$(CPM) exec $(CURRY2CGI)  --system="$(CURRYHOME)" -v2 \
+	$(CPM) exec $(CURRY2CGI)  --system="$(CURRYHOME)" \
 	  -i Controller.Category \
 	  -i Controller.SpiceySystem \
 	  -i Controller.Wine \

@@ -37,7 +37,6 @@ import HTML.Session
 import HTML.Styles.Bootstrap4
 import HTML.WUI
 
-import Config.Storage
 import Config.UserProcesses
 import System.Routes
 import System.Processes
@@ -267,7 +266,7 @@ spiceyFooter :: [HtmlExp]
 spiceyFooter =
   [par [htxt "powered by",
         href "http://www.informatik.uni-kiel.de/~pakcs/spicey"
-             [image "images/spicey-logo.png" "Spicey"]
+             [image "bt4/img/spicey-logo.png" "Spicey"]
           `addAttr` ("target","_blank"),
         htxt "Framework"]]
 
@@ -413,7 +412,8 @@ deleteIcon =
 
 --- Definition of the session state to store the page message (a string).
 pageMessage :: Global (SessionStore String)
-pageMessage = global emptySessionStore (Persistent (inDataDir "pageMessage"))
+pageMessage =
+  global emptySessionStore (Persistent (inSessionDataDir "pageMessage"))
 
 --- Gets the page message and delete it.
 getPageMessage :: IO String
@@ -432,7 +432,7 @@ setPageMessage msg = putSessionData pageMessage msg
 
 --- Definition of the session state to store the last URL (as a string).
 lastUrls :: Global (SessionStore [String])
-lastUrls = global emptySessionStore (Persistent (inDataDir "lastUrls"))
+lastUrls = global emptySessionStore (Persistent (inSessionDataDir "lastUrls"))
 
 --- Gets the list of URLs of the current session.
 getLastUrls :: IO [String]
