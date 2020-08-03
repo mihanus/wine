@@ -8,8 +8,8 @@ WEBSERVERDIR=$(HOME)/public_html/SAM/wine
 
 # Definition of the root of the Curry system to be used:
 #export CURRYHOME=$(HOME)/pakcs
-export CURRYHOME=$(HOME)/kics2
-#export CURRYHOME=/opt/kics2
+#export CURRYHOME=$(HOME)/kics2
+export CURRYHOME=/opt/kics2
 
 # Curry bin directory to be used:
 export CURRYBIN=$(CURRYHOME)/bin
