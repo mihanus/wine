@@ -2,27 +2,25 @@ module Controller.Wine
   ( mainWineController, newWineForm, editWineForm
   ) where
 
-import Global
-import Sort   ( sortBy )
-import Time
-
+import Data.List ( sortBy )
+import Data.Time
 import HTML.Base
 import HTML.Session
-import HTML.Styles.Bootstrap3
 import HTML.WUI
-
-import System.Spicey
+import HTML.Styles.Bootstrap4 ( hrefSuccButton )
 import Wine
-import View.Category
-import View.Wine
-import Maybe
+import Config.EntityRoutes
+import Config.UserProcesses
 import System.SessionInfo
 import System.Authorization
 import System.AuthorizedActions
-import Config.Globals
-import Config.UserProcesses
+import System.Spicey
+import View.Category         ( leqCategory )
 import View.EntitiesToHtml
+import View.Wine
 import Database.CDBI.Connection
+
+import System.PreludeHelpers
 
 --- Choose the controller for a Wine entity according to the URL parameter.
 mainWineController :: Controller
@@ -52,54 +50,54 @@ type NewWine = (String,String,Int,String,Int,Category)
 --- Shows a form to create a new Wine entity inside the given wine.
 newWineController :: Controller
 newWineController =
-  checkAuthorization (wineOperationAllowed NewEntity) $ \_ -> do
+  checkAuthorization (wineOperationAllowed NewEntity) $ \sinfo -> do
     allCategorys <- getAllCats
-    setParWuiStore wuiNewWineStore allCategorys
+    setParWuiStore newWineStore (sinfo,allCategorys)
       ("", "", 0, "", 0, head allCategorys)
-    return [formExp newWineForm]
+    return [formElem newWineForm]
 
---- Supplies a WUI form to create a new Wine entity.
---- The fields of the entity have some default values.
-newWineForm :: HtmlFormDef ([Category], WuiStore NewWine)
+--- A WUI form to create a new Wine entity.
+--- The default values for the fields are stored in 'newWineStore'.
+newWineForm :: HtmlFormDef ((UserSessionInfo,[Category]),WuiStore NewWine)
 newWineForm =
   pwui2FormDef "Controller.Wine.newWineForm"
-    wuiNewWineStore
-    (\allCategorys -> wWine allCategorys)
+    newWineStore
+    (\(_,allCategorys) -> wWine allCategorys)
     (\_ entity -> transactionController (runT (createWineT entity))
                    (nextInProcessOr (listWineController Nothing False) Nothing))
-    (renderWUI "Neuer Wein" "Anlegen" "?Wine/list")
+    (\(sinfo,_) -> renderWUI sinfo "Neuer Wein" "Anlegen" "?Wine/list" ())
 
----- The data stored for executing the WUI form.
-wuiNewWineStore :: Global (SessionStore ([Category], WuiStore NewWine))
-wuiNewWineStore =
-  global emptySessionStore (Persistent (inSessionDataDir "wuiNewWineStore"))
+--- The data stored for executing the "new entity" WUI form.
+newWineStore :: SessionStore ((UserSessionInfo,[Category]),WuiStore NewWine)
+newWineStore = sessionStore "newWineStore"
 
 --- Transaction to persist a new Wine entity to the database.
-createWineT :: (String,String,Int,String,Int,Category) -> DBAction ()
+createWineT :: NewWine -> DBAction ()
 createWineT (name,region,year,price,bottles,category) =
   newWineWithCategoryWineCategoryKey name region year price bottles
    (categoryKey category)
-   >+= (\_ -> return ())
+   >>= (\_ -> return ())
 
 --------------------------------------------------------------------------
 --- Shows a form to edit the given Wine entity.
 editWineController :: Wine -> Controller
 editWineController wineToEdit =
   checkAuthorization (wineOperationAllowed (UpdateEntity wineToEdit))
-   $ \_ -> do
+   $ \sinfo -> do
       allCategorys <- getAllCats
       wineCategoryCategory <- runJustT (getWineCategoryCategory wineToEdit)
-      setParWuiStore wuiEditWineStore
-        (wineToEdit,wineCategoryCategory,allCategorys) wineToEdit
-      return [formExp editWineForm]
+      setParWuiStore editWineStore
+        (sinfo, wineToEdit,wineCategoryCategory,allCategorys) wineToEdit
+      return [formElem editWineForm]
 
---- Supplies a WUI form to edit a given Wine entity.
---- The fields of the entity have some default values.
-editWineForm :: HtmlFormDef ((Wine,Category,[Category]), WuiStore Wine)
+--- A WUI form to edit a Wine entity.
+--- The default values for the fields are stored in 'editWineStore'.
+editWineForm
+  :: HtmlFormDef ((UserSessionInfo,Wine,Category,[Category]),WuiStore Wine)
 editWineForm =
   pwui2FormDef "Controller.Wine.editWineForm"
-    wuiEditWineStore
-    (\ (wine,winecat,allcats) -> wWineType wine winecat allcats)
+    editWineStore
+    (\ (_,wine,winecat,allcats) -> wWineType wine winecat allcats)
     (\_ wine ->
        checkAuthorization (wineOperationAllowed (UpdateEntity wine)) $ \_ ->
          transactionController (runT (updateWineT wine))
@@ -107,15 +105,14 @@ editWineForm =
               (listWineController (Just (wineCategoryWineCategoryKey wine))
                                   False)
               Nothing))
-    (\ (wine,_,_) -> renderWUI "Ändere Wein" "Ändern"
+    (\ (sinfo,wine,_,_) -> renderWUI sinfo "Ändere Wein" "Ändern"
          ("?Wine/cat/" ++ showCategoryIDKey (wineCategoryWineCategoryKey wine))
          ())
 
----- The data stored for executing the WUI form.
-wuiEditWineStore ::
-  Global (SessionStore ((Wine,Category,[Category]), WuiStore Wine))
-wuiEditWineStore =
-  global emptySessionStore (Persistent (inSessionDataDir "wuiEditWineStore"))
+--- The data stored for executing the edit WUI form.
+editWineStore
+  :: SessionStore ((UserSessionInfo,Wine,Category,[Category]),WuiStore Wine)
+editWineStore = sessionStore "editWineStore"
 
 --- Decrement the number of bottles of the given Wine entity.
 decrWineController :: Wine -> Controller
@@ -170,11 +167,11 @@ listWineController mbcat showall =
     catname <- maybe (return "Alle Weine") getCategoryName mbcat
     let allbutton =
           if showall
-            then hrefSuccessButton
+            then hrefSuccButton
                    ("?Wine/" ++
                     maybe "list" (\c -> "cat/" ++ showCategoryIDKey c) mbcat)
                    [htxt "nur Weine mit Flaschen anzeigen"]
-            else hrefSuccessButton
+            else hrefSuccButton
                    ("?Wine/" ++
                     maybe "list/all"
                           (\c -> "cat/" ++ showCategoryIDKey c ++ "/all")

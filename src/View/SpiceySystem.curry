@@ -38,10 +38,10 @@ loginView currlogin =
     let loginname = defaultLoginName
         passwd = env passwdfield
     if null passwd
-      then done
+      then return ()
       else do hash <- getUserHash loginname passwd
               storedhash <- readFile defaultHashFile
-              if hash==storedhash
+              if hash == storedhash
                 then do loginToSession loginname
                         setPageMessage ("Logged in as: "++loginname)
                 else setPageMessage "Login failed: wrong password"
@@ -53,7 +53,7 @@ loginView currlogin =
 
 -----------------------------------------------------------------------------
 --- A view for all processes contained in a given process specification.
-processListView :: Processes a -> [HtmlExp]
+processListView :: Processes a -> [BaseHtml]
 processListView procs =
   [h1 [htxt "Processes"],
    ulist (map processColumn (zip (processNames procs) [1..]))]
@@ -63,7 +63,7 @@ processListView procs =
 
 -----------------------------------------------------------------------------
 --- A view for all URLs of a session.
-historyView :: [String] -> [HtmlExp]
+historyView :: [String] -> [BaseHtml]
 historyView urls =
   [h1 [htxt "History"],
    ulist (map (\url -> [href ("?"++url) [htxt url]])

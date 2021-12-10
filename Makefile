@@ -4,15 +4,15 @@ CURRYOPTIONS=:set -time
 
 # Target directory where the compiled cgi programs, style sheets, etc
 # should be stored, e.g.: $(HOME)/public_html
-WEBSERVERDIR=$(HOME)/public_html/SAM/wine
+WEBSERVERDIR=$(HOME)/public_html/SAM/wine_kics3
 
 # Definition of the root of the Curry system to be used:
-#export CURRYHOME=$(HOME)/pakcs
-#export CURRYHOME=$(HOME)/kics2
-export CURRYHOME=/opt/kics2
+#export SYSTEM=$(HOME)/pakcs3
+export SYSTEM=$(HOME)/kics3
+#export SYSTEM=/opt/kics2/kics2-3.0.0
 
 # Curry bin directory to be used:
-export CURRYBIN=$(CURRYHOME)/bin
+export CURRYBIN=$(SYSTEM)/bin
 
 CURRYOPTIONS=:set -time
 
@@ -73,16 +73,12 @@ deploy: checkdeploy
 	cp -r public/* $(WEBSERVERDIR)
 	chmod -R go+rX $(WEBSERVERDIR)
 	# recreate directory for storing local session data:
-	#/bin/rm -r $(WEBSERVERDIR)/data
-	mkdir -p $(WEBSERVERDIR)/data # create private data dir
-	cp -p data/htaccess $(WEBSERVERDIR)/data/.htaccess # and make it private
-	chmod 700 $(WEBSERVERDIR)/data
-	mkdir -p $(WEBSERVERDIR)/sessiondata # create private data dir
-	cp -p data/htaccess $(WEBSERVERDIR)/sessiondata/.htaccess # and make it private
+	/bin/rm -rf $(WEBSERVERDIR)/sessiondata
+	mkdir -p $(WEBSERVERDIR)/sessiondata
 	chmod 700 $(WEBSERVERDIR)/sessiondata
 
 $(WEBSERVERDIR)/spicey.cgi: src/*.curry src/*/*.curry
-	$(CPM) exec $(CURRY2CGI)  --system="$(CURRYHOME)" \
+	$(CPM) exec $(CURRY2CGI)  --system="$(SYSTEM)" \
 	  -i Controller.Category \
 	  -i Controller.SpiceySystem \
 	  -i Controller.Wine \

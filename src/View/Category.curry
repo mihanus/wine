@@ -3,16 +3,16 @@ module View.Category
   , showCategoryView, listCategoryView, leqCategory
   ) where
 
-import HTML.WUI
+import Data.List
+import Data.Time
 import HTML.Base
-import Time
-import Sort
 import HTML.Styles.Bootstrap4
+import HTML.WUI
+import Wine
 import Config.EntityRoutes
 import System.Authentication
-import System.Spicey
 import System.SessionInfo
-import Wine
+import System.Spicey
 import View.EntitiesToHtml
 
 --- The WUI specification for the entity type Category.
@@ -36,7 +36,7 @@ wCategoryType category =
 
 --------------------------------------------------------------------------
 --- Supplies a view to show the details of a Category.
-showCategoryView :: UserSessionInfo -> Category -> [HtmlExp]
+showCategoryView :: UserSessionInfo -> Category -> [BaseHtml]
 showCategoryView _ category =
   categoryToDetailsView category
    ++ [hrefPrimSmButton "?Category/list" [htxt "back to Category list"]]
@@ -46,17 +46,21 @@ leqCategory :: Category -> Category -> Bool
 leqCategory x1 x2 = categoryName x1 <= categoryName x2
 
 --- Supplies a list view for a given list of Category entities.
---- Shows also buttons to show, delete, or edit entries.
-listCategoryView :: UserSessionInfo -> [Category] -> [HtmlExp]
+--- Shows also show/edit/delete buttons if the user is logged in.
+--- The arguments are the session info and the list of Category entities.
+listCategoryView :: UserSessionInfo -> [Category] -> [BaseHtml]
 listCategoryView sinfo categorys =
   [h1 [htxt "Weinkategorien:"],
    spTable
     (--[take 1 categoryLabelList] ++
-     map listCategory (mergeSortBy leqCategory categorys))]
-  where listCategory :: Category -> [[HtmlExp]]
-        listCategory category =
-          categoryToListView category ++
-           if not (isAdminSession sinfo) then [] else
-           [--[hrefPrimBadge (showRoute category) [htxt "Show"]]
-            [hrefLightBadge (editRoute category)   [editIcon]]
-           ,[hrefLightBadge (deleteRoute category) [deleteIcon]]]
+     map listCategory (sortBy leqCategory categorys))
+  ]
+  where
+   listCategory category =
+     categoryToListView category ++
+      if not (isAdminSession sinfo)
+        then []
+        else [--[hrefPrimBadge (showRoute category) [htxt "Show"]]
+              [hrefLightBadge (editRoute category)   [editIcon]]
+             ,[hrefLightBadge (deleteRoute category) [deleteIcon]]
+             ]

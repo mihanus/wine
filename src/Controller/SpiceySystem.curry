@@ -11,8 +11,7 @@ module Controller.SpiceySystem
   )
  where
 
-import Global
-import ReadNumeric
+import Numeric
 
 import Config.UserProcesses
 import System.Spicey
@@ -28,16 +27,15 @@ loginController :: Controller
 loginController = do
   login <- getSessionLogin
   putSessionData loginViewData login
-  return [formExp loginFormDef]
+  return [formElem loginFormDef]
 
 loginFormDef :: HtmlFormDef (Maybe String)
 loginFormDef = formDefWithID "Controller.SpiceySystem.loginFormDef"
   (getSessionData loginViewData Nothing) loginView
 
 --- The data processed by the login form.
-loginViewData :: Global (SessionStore (Maybe String))
-loginViewData =
-  global emptySessionStore (Persistent (inSessionDataDir "loginViewData"))
+loginViewData :: SessionStore (Maybe String)
+loginViewData = sessionStore "loginViewData"
 
 -----------------------------------------------------------------------------
 --- Controller for showing and selecting user processes.
@@ -45,12 +43,11 @@ processListController :: Controller
 processListController = do
   args <- getControllerParams
   if null args
-   then return $ processListView availableProcesses
-   else case (readInt (head args)) of
-          Just (idInt, _) -> do
-            startProcess (processNames availableProcesses !! (idInt - 1))
-          Nothing ->
-            displayError "could not read process id"
+    then return $ processListView availableProcesses
+    else case readInt (head args) of
+           [(idInt, "")] ->
+             startProcess (processNames availableProcesses !! (idInt - 1))
+           _              -> displayError "could not read process id"
 
 -----------------------------------------------------------------------------
 --- Controller for the URL history.

@@ -2,12 +2,12 @@ module View.Wine
   ( wWine, tuple2Wine, wine2Tuple, wWineType
   , showWineView, listWineView ) where
 
-import HTML.WUI
+import Data.List
+import Data.Time
 import HTML.Base
-import Time
-import Sort
 import HTML.Styles.Bootstrap4
 import System.Authentication
+import HTML.WUI
 import Wine
 import Config.EntityRoutes
 import System.SessionInfo
@@ -58,7 +58,7 @@ wWineType wine category categoryList =
 
 --------------------------------------------------------------------------
 --- Supplies a view to show the details of a Wine.
-showWineView :: UserSessionInfo -> Wine -> Category -> [HtmlExp]
+showWineView :: UserSessionInfo -> Wine -> Category -> [BaseHtml]
 showWineView _ wine relatedCategory =
   wineToDetailsView wine relatedCategory
    ++ [hrefPrimSmButton "?Wine/list" [htxt "back to Wine list"]]
@@ -73,13 +73,13 @@ leqWine x1 x2 =
 --- Shows also show/edit/delete buttons if the user is logged in.
 --- The arguments are the session info and the list of Wine entities.
 listWineView :: UserSessionInfo -> String -> Maybe [Category] -> [Wine]
-             -> HtmlExp -> [HtmlExp]
+             -> BaseHtml -> [BaseHtml]
 listWineView sinfo catname mballcats wines allbutton =
   [h1 [htxt catname]
   ,spTable ([take 5 wineLabelList] ++ listWines mballcats)
   ,allbutton]
   where
-   listWines Nothing     = map listWine (mergeSortBy leqWine wines)
+   listWines Nothing     = map listWine (sortBy leqWine wines)
    listWines (Just cats) = concatMap listWinesOfCat cats
 
    listWinesOfCat cat =
@@ -88,12 +88,11 @@ listWineView sinfo catname mballcats wines allbutton =
       in if null catwines
          then []
          else [categoryToListView cat] ++
-              map listWine (mergeSortBy leqWine catwines) ++
+              map listWine (sortBy leqWine catwines) ++
               [[[italic [stringToHtml "Anzahl Flaschen: "]],[],[],[],
                 [italic [stringToHtml
                            (show (foldr (+) 0 (map wineBottles catwines)))]]]]
 
-   listWine :: Wine -> [[HtmlExp]]
    listWine wine =
      wineToListView wine ++
       if not (isAdminSession sinfo)

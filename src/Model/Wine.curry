@@ -1,13 +1,13 @@
 --- This file has been generated from
 --- 
----     /home/mh/home/curry/applications/wine2/Wine.erdterm
+---     /home/mh/home/curry/applications/wine/Wine.erdterm
 --- 
 --- and contains definitions for all entities and relations
 --- specified in this model.
 
 module Wine where
 
-import qualified Time
+import qualified Data.Time
 import qualified Database.CDBI.ER
 import qualified Database.CDBI.Criteria
 import qualified Database.CDBI.Connection

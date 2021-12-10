@@ -1,6 +1,6 @@
 module View.EntitiesToHtml where
 
-import Time
+import Data.Time
 import HTML.Base
 import HTML.Styles.Bootstrap4 ( hrefInfoBlock )
 import HTML.WUI
@@ -9,7 +9,7 @@ import Wine
 
 --- The list view of a Category entity in HTML format.
 --- This view is used in a row of a table of all entities.
-categoryToListView :: Category -> [[HtmlExp]]
+categoryToListView :: HTML h => Category -> [[h]]
 categoryToListView category =
   [[hrefInfoBlock (showControllerURL "Wine" ["cat",showCategoryKey category])
                     [stringToHtml (categoryName category)]]]
@@ -20,7 +20,7 @@ categoryToShortView :: Category -> String
 categoryToShortView category = categoryName category
 
 --- The detailed view of a Category entity in HTML format.
-categoryToDetailsView :: Category -> [HtmlExp]
+categoryToDetailsView :: HTML h => Category -> [h]
 categoryToDetailsView category =
   [spTable
     (map (\(label,value) -> [label,value])
@@ -29,13 +29,13 @@ categoryToDetailsView category =
     detailedView = [[stringToHtml (categoryName category)]]
 
 --- The labels of a Category entity, as used in HTML tables.
-categoryLabelList :: [[HtmlExp]]
+categoryLabelList :: HTML h => [[h]]
 categoryLabelList =
   [[textstyle "spicey_label spicey_label_for_type_string" "Name"]]
 
 --- The list view of a Wine entity in HTML format.
 --- This view is used in a row of a table of all entities.
-wineToListView :: Wine -> [[HtmlExp]]
+wineToListView :: HTML h => Wine -> [[h]]
 wineToListView wine =
   [[stringToHtml (wineName wine)],[stringToHtml (wineRegion wine)]
   ,[wineYearToHtml wine],[stringToHtml (winePrice wine)]
@@ -48,7 +48,7 @@ wineToShortView wine = wineName wine
 
 --- The detailed view of a Wine entity in HTML format.
 --- It also takes associated entities for every associated entity type.
-wineToDetailsView :: Wine -> Category -> [HtmlExp]
+wineToDetailsView :: HTML h => Wine -> Category -> [h]
 wineToDetailsView wine relatedCategory =
   [spTable
     (map (\(label,value) -> [label,value]) (zip wineLabelList detailedView))]
@@ -62,7 +62,7 @@ wineToDetailsView wine relatedCategory =
       ,[htxt (categoryToShortView relatedCategory)]]
 
 --- The labels of a Wine entity, as used in HTML tables.
-wineLabelList :: [[HtmlExp]]
+wineLabelList :: HTML h => [[h]]
 wineLabelList =
   [[textstyle "spicey_label spicey_label_for_type_string" "Name"]
   ,[textstyle "spicey_label spicey_label_for_type_string" "Region"]
@@ -72,6 +72,6 @@ wineLabelList =
   ,[textstyle "spicey_label spicey_label_for_type_relation" "Kategorie"]]
 
 
-wineYearToHtml :: Wine -> HtmlExp
+wineYearToHtml :: HTML h => Wine -> h
 wineYearToHtml wine = let year = wineYear wine in
   if year==0 then nbsp else intToHtml year
