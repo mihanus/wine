@@ -4,12 +4,11 @@ CURRYOPTIONS=:set -time
 
 # Target directory where the compiled cgi programs, style sheets, etc
 # should be stored, e.g.: $(HOME)/public_html
-WEBSERVERDIR=$(HOME)/public_html/SAM/wine_kics3
+WEBSERVERDIR=$(HOME)/public_html/SAM/wine
 
 # Definition of the root of the Curry system to be used:
-#export SYSTEM=$(HOME)/pakcs3
-export SYSTEM=$(HOME)/kics3
-#export SYSTEM=/opt/kics2/kics2-3.0.0
+#export SYSTEM=/opt/pakcs
+export SYSTEM=/opt/kics2
 
 # Curry bin directory to be used:
 export CURRYBIN=$(SYSTEM)/bin
