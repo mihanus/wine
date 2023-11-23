@@ -8,7 +8,7 @@ import Data.Time
 import HTML.Base
 import HTML.Styles.Bootstrap4
 import HTML.WUI
-import Wine
+import Model.Wine
 import Config.EntityRoutes
 import System.Authentication
 import System.SessionInfo

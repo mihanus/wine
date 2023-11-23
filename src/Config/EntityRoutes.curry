@@ -1,7 +1,7 @@
 module Config.EntityRoutes () where
 
 import System.Spicey
-import Wine
+import Model.Wine
 
 instance EntityController Category where
   controllerOnKey s =

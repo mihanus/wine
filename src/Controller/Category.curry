@@ -9,7 +9,7 @@ import HTML.Session
 import HTML.WUI
 
 import System.Spicey
-import Wine
+import Model.Wine
 import View.Category
 import System.SessionInfo
 import System.Authorization

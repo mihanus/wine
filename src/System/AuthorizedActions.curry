@@ -3,7 +3,7 @@ module System.AuthorizedActions where
 import System.Authorization
 import System.Authentication
 import System.SessionInfo
-import Wine
+import Model.Wine
 
 anyOperationAllowed :: AccessType _ -> UserSessionInfo -> IO AccessResult
 anyOperationAllowed at sinfo = return $

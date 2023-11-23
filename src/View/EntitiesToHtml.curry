@@ -5,7 +5,7 @@ import HTML.Base
 import HTML.Styles.Bootstrap4 ( hrefInfoBlock )
 import HTML.WUI
 import System.Spicey
-import Wine
+import Model.Wine
 
 --- The list view of a Category entity in HTML format.
 --- This view is used in a row of a table of all entities.

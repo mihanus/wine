@@ -8,7 +8,7 @@ import HTML.Base
 import HTML.Session
 import HTML.WUI
 import HTML.Styles.Bootstrap4 ( hrefSuccButton )
-import Wine
+import Model.Wine
 import Config.EntityRoutes
 import Config.UserProcesses
 import System.SessionInfo

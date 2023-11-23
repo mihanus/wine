@@ -5,13 +5,14 @@
 --- and contains definitions for all entities and relations
 --- specified in this model.
 
-module Wine where
+module Model.Wine where
 
 import qualified Data.Time
 import qualified Database.CDBI.ER
 import qualified Database.CDBI.Criteria
 import qualified Database.CDBI.Connection
 import qualified Database.CDBI.Description
+import System.FilePath ( (</>) )
 
 import Config.Globals
 
@@ -29,7 +30,8 @@ data WineID = WineID Int
 
 --- The name of the SQLite database file.
 sqliteDBFile :: String
-sqliteDBFile = "/net/medoc/home/mh/home/data/wine/Wine.db"
+--sqliteDBFile = "/net/medoc/home/mh/home/data/wine/Wine.db"
+sqliteDBFile = wineDataDir </> "Wine.db"
 
 --- The ER description of the `Category` entity.
 category_CDBI_Description

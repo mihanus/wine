@@ -1,14 +1,12 @@
 -- Some global settings for the wine manager
 module Config.Globals where
 
---- Location of the directory containing private run-time data
---- such as session and authentication information.
-spiceyDataDir :: String
-spiceyDataDir = "data"
+import System.FilePath ( (</>) )
 
 -- The directory containing all wine data:
 wineDataDir :: String
-wineDataDir = "/net/medoc/home/mh/home/data/wine"
+--wineDataDir = "/net/medoc/home/mh/home/data/wine"
+wineDataDir = "../wineData"
 
 -- Standard login name
 defaultLoginName :: String
@@ -16,4 +14,4 @@ defaultLoginName = "sommelier"
 
 -- File containing hash code of default login
 defaultHashFile :: String
-defaultHashFile = wineDataDir ++ "/.winelogin"
+defaultHashFile = wineDataDir </> ".winelogin"

@@ -4,7 +4,10 @@ CURRYOPTIONS=:set -time
 
 # Target directory where the compiled cgi programs, style sheets, etc
 # should be stored, e.g.: $(HOME)/public_html
-WEBSERVERDIR=$(HOME)/public_html/SAM/wine
+WEBSERVERDIR=$(HOME)/public_html/SAMHANUS/SAM/wine
+
+# Directory containing wine data:
+DATADIR=$(WEBSERVERDIR)/../wineData
 
 # Definition of the root of the Curry system to be used:
 #export SYSTEM=/opt/pakcs
@@ -71,6 +74,9 @@ deploy: checkdeploy
 	# copy other files (style sheets, images,...)
 	cp -r public/* $(WEBSERVERDIR)
 	chmod -R go+rX $(WEBSERVERDIR)
+	# be sure that the data directory exists:
+	mkdir -p $(DATADIR)
+	chmod 700 $(DATADIR)
 	# recreate directory for storing local session data:
 	/bin/rm -rf $(WEBSERVERDIR)/sessiondata
 	mkdir -p $(WEBSERVERDIR)/sessiondata

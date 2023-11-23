@@ -1,4 +1,4 @@
-SQLParserInfoType.PInfo "/net/medoc/home/mh/home/data/wine/Wine.db" "Wine"
+PInfo "/net/medoc/home/mh/home/data/wine/Wine.db" "Model.Wine"
  [(("Wine","inCategory","Category"),SQLParserInfoType.NtoOne "WineCategory")
  ,(("Category","withWine","Wine"),SQLParserInfoType.OnetoN "WineCategory")]
  [("categoryKey",False)
