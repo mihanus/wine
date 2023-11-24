@@ -25,25 +25,28 @@ import System.Authentication
 loginView :: Maybe String -> [HtmlExp]
 loginView currlogin =
   case currlogin of
-   Nothing -> [h3 [htxt "Manager password:"],
-               password passwdfield, nbsp,
+   Nothing -> [h3 [htxt "Login as:"],
+               htxt "Login name:", nbsp, 
+               textField loginfield "" `addAttr` ("autofocus",""), nbsp,
+               htxt "Password:", nbsp, password passwdfield, nbsp,
                primSmButton "Login" loginHandler]
    Just _  -> [h3 [htxt "Really logout?"],
                primSmButton "Logout" logoutHandler, nbsp,
                hrefScndSmButton "?" [htxt "Cancel"]]
  where
-  passwdfield free
+  loginfield, passwdfield free
 
   loginHandler env = do
-    let loginname = defaultLoginName
-        passwd = env passwdfield
+    let loginname = env loginfield
+        passwd    = env passwdfield
     if null passwd
       then return ()
-      else do hash <- getUserHash loginname passwd
+      else do adminlogin <- readFile defaultLoginFile
+              hash       <- getUserHash loginname passwd
               storedhash <- readFile defaultHashFile
-              if hash == storedhash
+              if loginname == adminlogin && hash == storedhash
                 then do loginToSession loginname
-                        setPageMessage ("Logged in as: "++loginname)
+                        setPageMessage $ "Logged in as: " ++ loginname
                 else setPageMessage "Login failed: wrong password"
     nextInProcessOr (redirectController "?") Nothing >>= getPage
 
